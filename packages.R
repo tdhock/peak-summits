@@ -1,0 +1,8 @@
+works_with_R(
+  "3.5.1",
+  data.table="1.11.6",
+  ggplot2="3.0.0",
+  PeakError="2017.6.19",
+  xtable="1.8.3",
+  "tdhock/PeakSegJoint@0f7886418edb6d6eaa08011c11c1b4ecb0a7b00b",
+  "tdhock/PeakSegPipeline@3d6bab8ff4dc637693f5327e455e46696e9768e6")

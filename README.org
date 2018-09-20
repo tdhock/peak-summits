@@ -1,0 +1,11 @@
+This repo investigates a graph-constrained changepoint model with two
+states and four changes, multi-modal regression, which detects peak
+summits.
+
+** 20 Sept 2018
+
+[[file:figure-Mono27ac-label-error.R]] uses new C++ solver to detect summits in figure below.
+
+[[file:figure-Mono27ac-label-error.png]]
+
+
