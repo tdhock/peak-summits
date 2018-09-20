@@ -1,2 +1,12 @@
 *~
 library
+auto
+Cpattern1D
+Cpattern1D.tgz
+.Rhistory
+*.aux
+*.bbl
+*.blg
+*.log
+*.out
+paper.pdf
