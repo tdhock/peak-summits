@@ -15,7 +15,8 @@ write.table(
   Mono27ac$coverage, file.path(data.dir, "coverage.bedGraph"),
   col.names=FALSE, row.names=FALSE, quote=FALSE, sep="\t")
 
-pen.list <- list(
+pen.vec <- list(
+  ##"way too many peaks"="50",
   "too many peaks"="500",
   "zero label errors"="3000",
   "too few peaks"="50000")
@@ -25,8 +26,8 @@ summit.labels <- Mono27ac$labels[annotation %in% c("noPeaks", "peaks")]
 lab.err.list <- list()
 fit.segs.list <- list()
 fit.state.list <- list()
-for(pen.name in names(pen.list)){
-  pen.str <- pen.list[[pen.name]]
+for(pen.name in names(pen.vec)){
+  pen.str <- pen.vec[[pen.name]]
   fit <- problem.PeakSegFPOP(data.dir, pen.str, allow.free.changes=TRUE)
   sorted.segs <- fit$segments[order(chromStart)]
   sorted.segs[, diff.status := c(0, diff(status=="peak"))]
@@ -64,7 +65,10 @@ for(pen.name in names(pen.list)){
       list(fp=0L, fn=as.integer(0==summits))
     }
   }, by=list(chrom, chromStart, chromEnd, annotation)]
-  pen.fac <- factor(pen.name, names(pen.list))
+  l <- function(pname){
+    sprintf("penalty=%s\n%s", pen.vec[pname], pname)
+  }
+  pen.fac <- factor(l(pen.name), l(names(pen.vec)))
   lab.err.list[[pen.name]] <- data.table(
     pen.fac, rbind(state.err, summit.err))
   fit.state.list[[pen.name]] <- data.table(
@@ -135,13 +139,22 @@ gg <- ggplot()+
   ylab("Number of aligned reads")
 print(gg)
 
-gg+
+gg.zoom <- gg+
   coord_cartesian(xlim=c(lab.min, lab.max), ylim=c(0, 10))
+png("figure-Mono27ac-label-error-zoom.png", 10, 4, res=100, units="in")
+print(gg.zoom)
+dev.off()
+
+gg.zoom <- gg+
+  coord_cartesian(xlim=c(50e4, 51e4), ylim=c(-2, 45))+
+  guides(linetype="none", fill="none")
+png("figure-Mono27ac-label-error-zoom2.png", 10, 4, res=100, units="in")
+print(gg.zoom)
+dev.off()
 
 gg.out <- gg+
   coord_cartesian(xlim=c(2e5, 5.8e5), ylim=c(-2, 45), expand=FALSE)
-
 png("figure-Mono27ac-label-error.png", 10, 4, res=100, units="in")
 print(gg.out)
 dev.off()
-system("display figure-Mono27ac-label-error.png")
+##system("display figure-Mono27ac-label-error.png")

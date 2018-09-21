@@ -93,10 +93,16 @@
 
 \begin{document}
 
+\maketitle
+
 \begin{figure}
   \centering
   \begin{minipage}{2in}
     \centering
+    \textbf{Unconstrained}
+
+    Sparsity in changes
+
     \begin{tikzpicture}[->,>=latex,shorten >=1pt,auto,node distance=2cm,
       thick,main node/.style={circle,draw}]
 
@@ -108,6 +114,10 @@
   \end{minipage}
   \begin{minipage}{2in}
     \centering
+    \textbf{Up-down constrained}\\
+    Sparsity in modes,\\
+    One change up to/\\
+    down from each mode
     \begin{tikzpicture}[->,>=latex,shorten >=1pt,auto,node distance=2cm,
       thick,main node/.style={circle,draw}]
 
@@ -120,11 +130,15 @@
       (0) edge [bend left] node {$c=1, \lambda, \leq$} (1)
       (start) edge [dashed] (0)
       (0) edge [dashed] (end)
-      (1) edge [bend left] node {$c=-1, 0, \geq$} (0);
+      (1) edge [bend left] node {$c=2, 0, \geq$} (0);
     \end{tikzpicture}
   \end{minipage}
   \begin{minipage}{2in}
     \centering
+    \textbf{Asymmetric multi-modal regression}\\
+    Sparsity in modes,\\
+    Many changes up to/\\
+    down from each mode
     \begin{tikzpicture}[->,>=latex,shorten >=1pt,auto,node distance=2cm,
       thick,main node/.style={circle,draw}]
 
@@ -137,21 +151,34 @@
       (0) edge [bend left] node {$c=1, \lambda, \leq$} (1)
       (start) edge [dashed] (0)
       (0) edge [dashed] (end)
-      (0) edge [loop below] node {$c=2,0,\geq$} (0)
-      (1) edge [loop above] node {$c=3,0,\leq$} (1)
-      (1) edge [bend left] node {$c=-1, 0, \geq$} (0);
+      (0) edge [loop below] node [left] {$c=4,0,\geq$\ \ } (0)
+      (1) edge [loop above] node [right] {\ $c=3,0,\leq$} (1)
+      (1) edge [bend left] node {$c=2, 0, \geq$} (0);
     \end{tikzpicture}
   \end{minipage}
-  \caption{State graphs for two changepoint models. Nodes represent
-    states and solid edges represent changepoints. }
+  \caption{State graphs for three changepoint models. Nodes represent
+    states and solid edges represent changepoints. \textbf{Left:} in
+    this context, the classical unconstrained optimal changepoint
+    model can be represented by the graph with one node and one
+    looping edge with penalty $\lambda$. \textbf{Middle:}
+    non-decreasing changes $c=1$ to each mode $s=1$ must be followed
+    by non-increasing changes $c=2$ to the background state $s=0$, and
+    vice versa. \textbf{Right:} our preliminary code for multi-modal
+    regression adds a looping edge for each state; these allow
+    un-penalized changes up to/down from each mode.}
   \label{fig:state-graph}
 \end{figure}
 
 For genomic data such as ChIP-seq \citep{chip-seq}, it is desirable to
 have a changepoint model which is interpretable in terms of peaks
-(large values) and background noise (small values). We therefore
-propose a model based on the graph shown in
-Figure~\ref{fig:state-graph}. 
+(large values) and background noise (small values). It is also
+desirable for the model to predict the precise locations of peak
+summits (the largest value). We therefore propose a new multi-modal
+regression model which is capable of identifying peak summits, based
+on the constraint graph shown in Figure~\ref{fig:state-graph},
+right. We have previous described a functional pruning algorithm which
+can be used to compute the optimal solution for a given penalty
+$\lambda$ parameter \citep{Hocking-constrained-changepoint-detection}.
 
 \begin{figure}
   \centering
@@ -183,25 +210,66 @@ Figure~\ref{fig:state-graph}.
     (bkg_1) edge [black, bend right] node[below] {$C_{0,1}^\geq$} (bkg_2)
     (bkg_N1) edge [black, bend right] node[below] {$C_{0,N-1}^\geq$} (bkg_N)
     (bkg_t1) edge [black, bend right] node[below] {$C_{0,i-1}^\geq$} (bkg_t)
-    (peak_t1) edge [black, bend left] node[above] {$C_{0,i-1}^\leq$} (peak_t)
+    (peak_t1) edge [black, bend left] node[above] {$C_{1,i-1}^\leq$} (peak_t)
     ;
   \end{tikzpicture}
   \caption{Directed acyclic graph (DAG) representing dynamic
-    programming computations (Algorithm~\ref{algo:GFPOP}) for
-    changepoint model with up-down constraints between adjacent
-    segment means. Nodes in the graph repesent cost functions, and
-    edges represent inputs to the the MinOfTwo sub-routine
-    (solid=changepoint, dotted=no change). There is one column for
-    each data point and one row for each state: the optimal cost of
-    the peak state $s=1$ at data point $i$ is $ C_{1,i}$ (top
-    row); the optimal cost of the background noise state $s=0$ is
-    $ C_{0,i}$ (bottom row). There is only one edge going to
-    $ C_{0,2}$ and $ C_{1,2}$ because the model is
-    constrained to start in the background noise state ($s_1=0$).}
+    programming computations for our preliminary implementation of the
+    asymmetric multi-modal regression model. Nodes in the graph repesent cost
+    functions, and edges represent inputs to the the pointwise
+    $\min\{\}$ operation (solid=changepoint, dotted=no change). There
+    is one column for each data point and one row for each state: the
+    optimal cost of the increasing state $s=1$ at data point $i$ is
+    $ C_{1,i}$ (top row); the optimal cost of the decreasing
+    state $s=0$ is $ C_{0,i}$ (bottom row).}
   \label{fig:computation-graph}
 \end{figure}
 
-\includegraphics[width=\textwidth]{figure-Mono27ac-label-error}
+% \begin{figure}
+%   \centering
+%   \begin{tikzpicture}[->,>=latex,shorten >=1pt,auto,node distance=2.5cm,
+%     thick,main node/.style={circle,draw}]
+%     \node[main node] (peak_t1) {$ C_{1,i-1}$};
+%     \node[main node] (bkg_t1) [below of=peak_t1] {$ C_{0,i-1}$};
+%     \node[main node] (peak_t) [right of=peak_t1] {$ C_{1,i}$};
+%     \node[main node] (bkg_t) [right of=bkg_t1] {$ C_{0,i}$};
+%     \path[every node/.style={font=\small}]
+%     (peak_t1) edge [dotted] node {$ C_{1,i-1}$} (peak_t)
+%     (peak_t1) edge [black, bend right] node [right] {$ C_{1,i-1}^{\geq}$} (bkg_t)
+%     (bkg_t1) edge [dotted] node[midway, below] {$ C_{0,i-1}$} (bkg_t)
+%     (bkg_t1) edge [black, bend left] node[right] {$ C_{0,i-1}^{\leq}+\lambda$} (peak_t)
+%     (bkg_t1) edge [black, bend right] node[below] {$C_{0,i-1}^\geq$} (bkg_t)
+%     (peak_t1) edge [black, bend left] node[above] {$C_{1,i-1}^\leq$} (peak_t)
+%     ;
+%   \end{tikzpicture}
+%   \caption{Directed acyclic graph (DAG) representing dynamic
+%     programming computations for the
+%     symmetric multi-modal regression model. }
+%   \label{fig:computation-graph}
+% \end{figure}
+
+\begin{figure}
+  \centering
+  \includegraphics[width=\textwidth]{figure-Mono27ac-label-error-zoom}
+  \caption{Our previously proposed labeling method and databases can
+    be used to train the new multi-modal regression model, by
+    selecting a penalty that minimizes the number of label
+    errors. \textbf{Top:} penalty=500 results in two false positive
+    noPeaks labels which should have no predicted peak summits (green
+    dots). \textbf{Bottom:} penalty=50000 results in a false negative
+    peakStart label which should have exactly one run of increasing
+    segments. \textbf{Middle:} penalty=3000 results in zero label
+    errors so is a good fit for these data.}
+  \label{fig:label-error}
+\end{figure}
+
+\begin{figure}
+  \centering
+  \includegraphics[width=\textwidth]{figure-Mono27ac-label-error}
+  \caption{Zooming out shows a larger portion of the data in which the algorithm has been used to detect peak summits using three different penalty parameters.}
+  \label{fig:zoom-out}
+\end{figure}
+%\includegraphics[width=\textwidth]{figure-Mono27ac-label-error-zoom2}
 
 \bibliographystyle{abbrvnat}
 \bibliography{refs}
