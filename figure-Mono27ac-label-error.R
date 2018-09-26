@@ -90,6 +90,12 @@ ann.colors <- c(
   peaks="#a445ee")
 lab.min <- Mono27ac$labels[1, chromStart]
 lab.max <- Mono27ac$labels[.N, chromEnd]
+lab.min <- 3e5
+lab.max <- 4e5
+fit.lines <- fit.segs[, data.table(
+  pos=as.integer(t(cbind(chromStart, chromEnd))),
+  mean=as.numeric(t(cbind(mean, mean)))
+  ), by=list(pen.fac)]
 gg <- ggplot()+
   theme_bw()+
   theme(panel.margin=grid::unit(0, "lines"))+
@@ -110,12 +116,18 @@ gg <- ggplot()+
     chromStart, count),
     color="grey50",
     data=Mono27ac$coverage)+
-  geom_segment(aes(
-    chromStart, mean,
-    xend=chromEnd, yend=mean),
+  geom_line(aes(
+    pos, mean),
     color="green",
-    size=1,
-    data=fit.segs)+
+    alpha=0.7,
+    size=0.7,
+    data=fit.lines)+
+  ## geom_segment(aes(
+  ##   chromStart, mean,
+  ##   xend=chromEnd, yend=mean),
+  ##   color="green",
+  ##   size=1,
+  ##   data=fit.segs)+
   ## geom_vline(aes(
   ##   xintercept=extremeMid),
   ##   data=fit.state[annotation=="peakStart"],
@@ -140,21 +152,21 @@ gg <- ggplot()+
 print(gg)
 
 gg.zoom <- gg+
-  coord_cartesian(xlim=c(lab.min, lab.max), ylim=c(0, 10))
-png("figure-Mono27ac-label-error-zoom.png", 10, 4, res=100, units="in")
+  coord_cartesian(xlim=c(lab.min, lab.max), ylim=c(0, 10)) 
+png("figure-Mono27ac-label-error-zoom.png", 10, 4, res=300, units="in")
 print(gg.zoom)
 dev.off()
 
 gg.zoom <- gg+
   coord_cartesian(xlim=c(50e4, 51e4), ylim=c(-2, 45))+
   guides(linetype="none", fill="none")
-png("figure-Mono27ac-label-error-zoom2.png", 10, 4, res=100, units="in")
+png("figure-Mono27ac-label-error-zoom2.png", 10, 4, res=300, units="in")
 print(gg.zoom)
 dev.off()
 
 gg.out <- gg+
   coord_cartesian(xlim=c(2e5, 5.8e5), ylim=c(-2, 45), expand=FALSE)
-png("figure-Mono27ac-label-error.png", 10, 4, res=100, units="in")
+png("figure-Mono27ac-label-error.png", 10, 4, res=300, units="in")
 print(gg.out)
 dev.off()
 ##system("display figure-Mono27ac-label-error.png")

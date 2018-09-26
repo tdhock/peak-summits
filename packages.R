@@ -4,5 +4,6 @@ works_with_R(
   ggplot2="3.0.0",
   PeakError="2017.6.19",
   xtable="1.8.3",
+  PeakSegOptimal="2018.05.25",
   "tdhock/PeakSegJoint@0f7886418edb6d6eaa08011c11c1b4ecb0a7b00b",
-  "tdhock/PeakSegPipeline@3d6bab8ff4dc637693f5327e455e46696e9768e6")
+  "tdhock/PeakSegPipeline@0b1f4954394f7dc720a67c7eb1a4ca2d5e1ca26a")
