@@ -286,8 +286,13 @@ $\lambda$ parameter \citep{Hocking-constrained-changepoint-detection}.
 
 \begin{figure}
   \centering
-  \includegraphics[width=\textwidth]{figure-AR1-multimodal}
-  \caption{Two models for neuro spike train data. \textbf{Left:}}
+  \includegraphics[width=\textwidth]{figure-AR1-multimodal.png}
+  \caption{Two models for neuro spike train data. \textbf{Left:} In
+    these data the previously proposed AR1 model misses a spike in the
+    left label (false negative) and predicts two spikes where there
+    should be only one in the right label (false
+    positive). \textbf{Right:} The proposed multimodal regression
+    model correctly detects the spikes in the left and right labels.}
   \label{fig:AR1-multimodal}
 \end{figure}
 
