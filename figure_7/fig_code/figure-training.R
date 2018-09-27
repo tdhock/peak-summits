@@ -30,108 +30,77 @@ calcium_dat <- readr::read_csv(paste0(data_dir, "calcium.csv")) %>% rename_all(c
 spike_dat <- readr::read_csv(paste0(data_dir, "spikes.csv")) %>% rename_all(col_renamer)
 data <- subset_data(calcium_dat, spike_dat, subset_is)
 
-## 2. Estimate spikes and calcium concentrations corresponding to eqn. (2) and (3)
-fit_2 <- estimate_spikes(dat = data$calcium_d, gam = gam, lambda = lambda_p2, 
-                         constraint = T, estimate_calcium = T)
-
-
 times <- subset_is * (1 / fps)
-dt <- data.table(seconds=times, calcium=data$calcium_d, AR1=fit_2$estimated_calcium)
+dt <- data.table(seconds=times, calcium=data$calcium_d)
 fwrite(dt[, list(calcium)], "../../Cpattern1D/data.txt", col.names=FALSE)
-penalty <- 5
-res.dt <- fread(paste("cd ../../Cpattern1D && bin/Debug/multimodal", penalty))
-seconds.between.data <- 1/fps
-sec.w <- seconds.between.data/3
-res.dt[, start.i := start +1L]
-res.dt[, end.i := c(nrow(dt), start.i[-.N]-1L)]
-res.dt[, start.seconds := dt$seconds[start.i]-sec.w ]
-res.dt[, end.seconds := dt$seconds[end.i]+sec.w ]
-res.dt[, Multimodal := ifelse(mean<0.1, 0, mean) ]
-over.dt <- res.dt[dt, on=list(start.seconds < seconds, end.seconds > seconds)]
-tall.dt <- melt(
-  over.dt,
-  measure.vars=c("Multimodal", "AR1"),
-  variable.name="model")
-tall.dt[, change.after := c(diff(value), NA)]
-tall.dt[, seconds.after := c(start.seconds[-1], NA)]
-tall.dt[, spike.i := cumsum(change.after < 0)]
-tall.dt[, thresh := ifelse(model=="Multimodal", 0.5, 0)]
-tall.dt[, thresh := ifelse(model=="Multimodal", 0, 0)]
-m <- function(model){
-  factor(
-    model,
-    c("AR1", "Multimodal"),
-    c("Previous model:
-AR1 with changepoints
-Jewell et al 2017", "Proposed graph-constrained
-changepoint model
-(two nodes, four edges)"))
+
+pen.vec <- c(
+  "Too few spikes"="500",
+  "Zero label errors"="0.5",
+  "Too many spikes"="0.05")
+m <- function(val){
+  factor(val, names(pen.vec), sprintf("Penalty=%s\n%s", pen.vec[names(pen.vec)], names(pen.vec)))
 }
-tall.dt[, model.fac := m(model)]
-spike.dt <- tall.dt[0 < change.after & thresh < value, list(
+mean.dt.list <- list()
+for(pen.name in names(pen.vec)){
+  penalty <- pen.vec[[pen.name]]
+  res.dt <- fread(paste("cd ../../Cpattern1D && bin/Debug/multimodal", penalty))
+  res.dt[, orig.mean := mean]
+  seconds.between.data <- 1/fps
+  sec.w <- seconds.between.data/3
+  res.dt[, start.i := start +1L]
+  res.dt[, end.i := c(nrow(dt), start.i[-.N]-1L)]
+  res.dt[, start.seconds := dt$seconds[start.i]-sec.w ]
+  res.dt[, end.seconds := dt$seconds[end.i]+sec.w ]
+  res.dt[, trunc.mean := ifelse(orig.mean < 0.5, 0, orig.mean) ]
+  res.dt[, zero.i := cumsum(trunc.mean != 0)]
+  zero.means <- res.dt[trunc.mean==0, list(
+    seg.mean=mean(orig.mean)
+  ), by=list(zero.i)]
+  res.dt[zero.means, mean := seg.mean, on=list(zero.i)]
+  over.dt <- res.dt[dt, on=list(start.seconds < seconds, end.seconds > seconds)]
+  over.dt[, change.after := c(diff(mean), NA)]
+  over.dt[, seconds.after := c(start.seconds[-1], NA)]
+  over.dt[, spike.i := cumsum(change.after < 0)]
+  mean.dt.list[[pen.name]] <- data.table(pen.fac=m(pen.name), over.dt)
+}
+mean.dt <- do.call(rbind, mean.dt.list)
+spike.dt <- mean.dt[0 < change.after & 0 < mean, list(
   start.seconds=min(start.seconds),
   end.seconds=max(start.seconds)
-), by=list(spike.i, model.fac)]
+), by=list(spike.i, pen.fac)]
 spike.dt[, mid.seconds := (start.seconds+end.seconds)/2]
-spike.dt[169.75 < start.seconds & start.seconds < 169.85]
 
-gg <- ggplot()+
-  theme_bw()+
-  ##theme(panel.margin=grid::unit(0, "lines"))+
-  facet_grid(. ~ model.fac)+
-  geom_point(aes(
-    seconds, calcium),
-    color="grey50",
-    data=dt)+
-  geom_line(aes(
-    start.seconds, value),
-    data=tall.dt,
-    color="green")+
-  geom_vline(aes(
-    xintercept=mid.seconds),
-    color="green",
-    linetype="dotted",
-    data=spike.dt)
-
-if(FALSE){
-  
-  gg+
-    geom_vline(xintercept=c(168, 172))
-
-  gg+coord_cartesian(xlim=c(0, 10))
-
-  gg+coord_cartesian(xlim=c(168, 172))
-
-  gg+coord_cartesian(xlim=c(160, 180))
-
-  gg+coord_cartesian(xlim=c(169.5, 170))
-  
-}
-
-lab <- function(xmin, xmax){
-  data.table(xmin, xmax, label="oneSpike", annotation="1change", problem=1)
+ann.map <- c(
+  oneSpike="1change",
+  noSpikes="0changes")
+lab <- function(xmin, xmax, label){
+  data.table(xmin, xmax, label, annotation=ann.map[label], problem=1)
 }
 label.dt <- rbind(
-  lab(166.5, 166.75),
-  lab(169.7, 169.9))
+  ##lab(125, 127, "noSpikes")
+  lab(147, 148, "oneSpike"),
+  lab(145, 146, "oneSpike"),
+  lab(130, 132, "oneSpike"))
 ann.colors <- c(
   noPeaks="#f6f4bf",
+  noSpikes="#f6f4bf",
   peakStart="#ffafaf",
   oneSpike="#ffafaf",
   peakEnd="#ff4c4c",
   peaks="#a445ee")
-xmin <- 166
-xmax <- 171
+xmin <- 120
+xmax <- 150
 spike.dt[, problem := 1]
 models.dt <- spike.dt[, list(
   models=.N
-  ), by=list(model.fac, problem)]
+  ), by=list(pen.fac, problem)]
 err.list <- penaltyLearning::labelError(
   models.dt, label.dt, spike.dt,
   change.var="mid.seconds",
   problem.var="problem",
   label.vars=c("xmin", "xmax"),
-  model.vars="model.fac")
+  model.vars="pen.fac")
 type.colors <- c(
   data="grey50",
   model="blue")
@@ -141,16 +110,18 @@ spike.y <- -1.5
 gg.out <- ggplot()+
   theme_bw()+
   theme(panel.margin=grid::unit(0, "lines"))+
-  facet_grid(model.fac ~ .)+
+  facet_grid(pen.fac ~ .)+
   penaltyLearning::geom_tallrect(aes(
     xmin=xmin, xmax=xmax, fill=label),
-    color=NA,
+    color="grey",
+    size=0.5,
     data=label.dt)+
   penaltyLearning::geom_tallrect(aes(
     xmin=xmin, xmax=xmax, linetype=status),
     fill=NA,
     color="black",
     data=err.list$label.errors)+
+  scale_fill_manual(values=ann.colors)+
   scale_linetype_manual(
     "error type",
     limits=c("correct", 
@@ -168,10 +139,10 @@ gg.out <- ggplot()+
   ##   color="grey50",
   ##   data=show.data)+
   geom_line(aes(
-    start.seconds, value, color=type),
+    start.seconds, mean, color=type),
     data=data.table(
       type="model",
-      tall.dt[xmin < start.seconds & start.seconds < xmax]),
+      mean.dt[xmin < start.seconds & start.seconds < xmax]),
     size=0.5)+
   geom_point(aes(
     mid.seconds, spike.y, color=type),
@@ -193,15 +164,15 @@ gg.out <- ggplot()+
   scale_color_manual(values=type.colors)+
   geom_text(aes(
     x,y,label=label, color=type, hjust=hjust),
-    data=data.table(model.fac=m("AR1"), rbind(
+    data=data.table(pen.fac=m("Too few spikes"), rbind(
       data.table(
-        hjust=0, x=170, y=9, label="Noisy activity data", type="data"),
+        hjust=0, x=132.5, y=7, label="Noisy activity data", type="data"),
       data.table(
-        hjust=0, x=170.2, y=5, label="Mean model", type="model"),
+        hjust=0.5, x=141, y=8, label="Mean model", type="model"),
       data.table(
-        hjust=1, x=169.4, y=spike.y, label="Predicted spikes", type="model"))))
+        hjust=1, x=127, y=spike.y, label="Predicted spikes", type="model"))))
 ##print(gg.out)
-png("../../figure-AR1-multimodal.png", 10, 4, units="in", res=300)
+png("../../figure-neuro-training.png", 10, 4, units="in", res=300)
 print(gg.out)
 dev.off()
 ##system("display ../../figure-AR1-multimodal.png")

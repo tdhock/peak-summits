@@ -110,27 +110,30 @@ if(file.exists("Mono27acPeaks.RData")){
 
 show.segs <- data.table(pdpa$segments)[peaks %in% 8:12]
 show.segs <- data.table(pdpa$segments)[peaks %in% fit.segs$peaks.int]
+type.colors <- c(
+  data="grey50",
+  model="blue")
+peak.y <- -3
 gg <- ggplot()+
   theme_bw()+
   theme(panel.margin=grid::unit(0, "lines"))+
   facet_grid(peaks ~ .)+
   geom_step(aes(
-    chromStart, count),
-    color="grey50",
-    data=Mono27ac$coverage)+
+    chromStart, count, color=type),
+    data=data.table(type="data", Mono27ac$coverage))+
   geom_segment(aes(
     chromStart, mean,
+    color=type,
     xend=chromEnd, yend=mean),
-    color="green",
     size=1,
-    data=show.segs)+
+    data=data.table(type="model", show.segs))+
   geom_point(aes(
-    chromStart, -2),
-    color="deepskyblue",
+    chromStart, peak.y, color=type),
     shape=1,
-    data=show.segs[status=="peak"])+
+    data=data.table(type="model", show.segs[status=="peak"]))+
   xlab("Position on chromosome")+
-  ylab("Number of aligned reads")
+  ylab("Number of aligned reads")+
+  scale_color_manual(values=type.colors)
 print(gg)
 
 ann.colors <- c(
@@ -191,29 +194,38 @@ gg <- ggplot()+
              "false negative"=3,
              "false positive"=1))+
   geom_step(aes(
-    chromStart, count),
-    color="grey50",
-    data=Mono27ac$coverage)+
+    chromStart, count, color=type),
+    data=data.table(type="data", Mono27ac$coverage))+
   geom_line(aes(
-    pos, mean),
-    color="green",
+    pos, mean, color=type),
     size=0.7,
     alpha=0.7,
-    data=both.lines)+
+    data=data.table(type="model", both.lines))+
   geom_point(aes(
-    (chromStart+chromEnd)/2, -2),
-    color="deepskyblue",
+    (chromStart+chromEnd)/2, peak.y, color=type),
     shape=1,
-    data=data.table(model=m("Two edges"), pdpa.peaks))+
+    data=data.table(type="model", model=m("Two edges"), pdpa.peaks))+
   geom_point(aes(
-    extremeMid, -2),
-    color="deepskyblue",
+    extremeMid, peak.y, color=type),
     shape=1,
     data=data.table(
+      type="model",
       model=m("Four edges"), fit.state[annotation=="peakStart"& peaks.int==P]))+
-  xlab("Position on chromosome")+
-  ylab("Number of aligned reads")+
-  coord_cartesian(xlim=c(15e4, 58e4))
+  xlab("Position on chromosome 11")+
+  scale_y_continuous(
+    "Number of aligned DNA sequence reads
+(measure of H3K27ac histone modification)"
+  )+
+  coord_cartesian(xlim=c(15e4, 58e4), ylim=c(-4, 44))+
+  guides(color="none")+
+  scale_color_manual(values=type.colors)+
+  geom_text(aes(
+    x,y,label=label, color=type),
+    hjust=0,
+    data=data.table(model=m("Two edges"), rbind(
+      data.table(x=4e5, y=20, label="Noisy coverage data", type="data"),
+      data.table(x=51e4, y=20, label="Mean model", type="model"),
+      data.table(x=33e4, y=peak.y, label="Predicted peaks", type="model"))))
 png("figure-Mono27ac-summits-vs-peaks.png", 10, 4, res=300, units="in")
 print(gg)
 dev.off()

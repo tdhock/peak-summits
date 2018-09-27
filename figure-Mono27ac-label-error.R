@@ -17,15 +17,21 @@ write.table(
 
 pen.vec <- list(
   ##"way too many peaks"="50",
-  "too many peaks"="500",
-  "zero label errors"="3000",
-  "too few peaks"="50000")
+  "Too many peaks"="500",
+  "Zero label errors"="3000",
+  "Too few peaks"="50000")
 Mono27ac$labels[, chromStart1 := chromStart + 1L]
 state.labels <- Mono27ac$labels[annotation %in% c("peakStart", "peakEnd")]
 summit.labels <- Mono27ac$labels[annotation %in% c("noPeaks", "peaks")]
 lab.err.list <- list()
 fit.segs.list <- list()
 fit.state.list <- list()
+l <- function(pname){
+  sprintf("Penalty=%s\n%s", pen.vec[pname], pname)
+}
+m <- function(pen.name){
+  factor(l(pen.name), l(names(pen.vec)))
+}
 for(pen.name in names(pen.vec)){
   pen.str <- pen.vec[[pen.name]]
   fit <- problem.PeakSegFPOP(data.dir, pen.str, allow.free.changes=TRUE)
@@ -65,10 +71,7 @@ for(pen.name in names(pen.vec)){
       list(fp=0L, fn=as.integer(0==summits))
     }
   }, by=list(chrom, chromStart, chromEnd, annotation)]
-  l <- function(pname){
-    sprintf("penalty=%s\n%s", pen.vec[pname], pname)
-  }
-  pen.fac <- factor(l(pen.name), l(names(pen.vec)))
+  pen.fac <- m(pen.name)
   lab.err.list[[pen.name]] <- data.table(
     pen.fac, rbind(state.err, summit.err))
   fit.state.list[[pen.name]] <- data.table(
@@ -92,10 +95,14 @@ lab.min <- Mono27ac$labels[1, chromStart]
 lab.max <- Mono27ac$labels[.N, chromEnd]
 lab.min <- 3e5
 lab.max <- 4e5
+type.colors <- c(
+  data="grey50",
+  model="blue")
 fit.lines <- fit.segs[, data.table(
   pos=as.integer(t(cbind(chromStart, chromEnd))),
   mean=as.numeric(t(cbind(mean, mean)))
-  ), by=list(pen.fac)]
+), by=list(pen.fac)]
+peak.y <- -1.3
 gg <- ggplot()+
   theme_bw()+
   theme(panel.margin=grid::unit(0, "lines"))+
@@ -113,15 +120,13 @@ gg <- ggplot()+
     data=lab.err)+
   scale_fill_manual("label", values=ann.colors)+
   geom_step(aes(
-    chromStart, count),
-    color="grey50",
-    data=Mono27ac$coverage)+
+    chromStart, count, color=type),
+    data=data.table(type="data", Mono27ac$coverage))+
   geom_line(aes(
-    pos, mean),
-    color="green",
+    pos, mean, color=type),
     alpha=0.7,
     size=0.7,
-    data=fit.lines)+
+    data=data.table(type="model", fit.lines))+
   ## geom_segment(aes(
   ##   chromStart, mean,
   ##   xend=chromEnd, yend=mean),
@@ -134,11 +139,9 @@ gg <- ggplot()+
   ##   color="green",
   ##   linetype="dashed")+
   geom_point(aes(
-    extremeMid, extremeMean),
-    data=fit.state[annotation=="peakStart"],
-    shape=21,
-    color="black",
-    fill="green")+
+    extremeMid, peak.y, color=type),
+    data=data.table(type="model", fit.state[annotation=="peakStart"]),
+    shape=1)+
   scale_linetype_manual(
     "error type",
     limits=c("correct", 
@@ -147,23 +150,31 @@ gg <- ggplot()+
     values=c(correct=0,
              "false negative"=3,
              "false positive"=1))+
-  xlab("Position on chromosome")+
-  ylab("Number of aligned reads")
-print(gg)
-
+  xlab("Position on chromosome 11")+
+  scale_y_continuous(
+    "Number of aligned DNA sequence reads
+(measure of H3K27ac histone modification)",
+breaks=seq(0, 10, by=2))+
+  guides(color="none")+
+  scale_color_manual(values=type.colors)+
+  geom_text(aes(
+    x,y,label=label, color=type, hjust=hjust),
+    data=data.table(pen.fac=m("Too many peaks"), rbind(
+      data.table(hjust=1, x=4e5, y=3, label="Noisy coverage data", type="data"),
+      data.table(hjust=0.5, x=31e4, y=9, label="Mean model", type="model"),
+      data.table(hjust=0, x=375000, y=peak.y, label="Predicted peaks", type="model"))))
 gg.zoom <- gg+
-  coord_cartesian(xlim=c(lab.min, lab.max), ylim=c(0, 10)) 
+  coord_cartesian(xlim=c(lab.min, lab.max), ylim=c(-2, 10))
+##print(gg.zoom)
 png("figure-Mono27ac-label-error-zoom.png", 10, 4, res=300, units="in")
 print(gg.zoom)
 dev.off()
-
-gg.zoom <- gg+
-  coord_cartesian(xlim=c(50e4, 51e4), ylim=c(-2, 45))+
-  guides(linetype="none", fill="none")
-png("figure-Mono27ac-label-error-zoom2.png", 10, 4, res=300, units="in")
-print(gg.zoom)
-dev.off()
-
+## gg.zoom <- gg+
+##   coord_cartesian(xlim=c(50e4, 51e4), ylim=c(-2, 45))+
+##   guides(linetype="none", fill="none")
+## png("figure-Mono27ac-label-error-zoom2.png", 10, 4, res=300, units="in")
+## print(gg.zoom)
+## dev.off()
 gg.out <- gg+
   coord_cartesian(xlim=c(2e5, 5.8e5), ylim=c(-2, 45), expand=FALSE)
 png("figure-Mono27ac-label-error.png", 10, 4, res=300, units="in")

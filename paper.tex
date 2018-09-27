@@ -253,7 +253,7 @@ $\lambda$ parameter \citep{Hocking-constrained-changepoint-detection}.
     be used to train the new multi-modal regression model, by
     selecting a penalty that minimizes the number of label
     errors. \textbf{Top:} penalty=500 results in two false positive
-    noPeaks labels which should have no predicted peak summits (green
+    noPeaks labels which should have no predicted peak summits (blue
     dots). \textbf{Bottom:} penalty=50000 results in a false negative
     peakStart label which should have exactly one run of increasing
     segments. \textbf{Middle:} penalty=3000 results in zero label
@@ -287,17 +287,30 @@ $\lambda$ parameter \citep{Hocking-constrained-changepoint-detection}.
 \begin{figure}
   \centering
   \includegraphics[width=\textwidth]{figure-AR1-multimodal.png}
-  \caption{Two models for neuro spike train data. \textbf{Left:} In
+  \caption{Two models for neuro spike train data. \textbf{Top:} In
     these data the previously proposed AR1 model misses a spike in the
     left label (false negative) and predicts two spikes where there
     should be only one in the right label (false
-    positive). \textbf{Right:} The proposed multimodal regression
+    positive). \textbf{Bottom:} The proposed multimodal regression
     model correctly detects the spikes in the left and right labels.}
   \label{fig:AR1-multimodal}
+\end{figure}
+
+\begin{figure}
+  \centering
+  \includegraphics[width=\textwidth]{figure-neuro-training}
+  \caption{The penalty parameter of our graph-constrained model for
+    neuro spike train data can be trained using our existing labeling
+    method. \textbf{Top:} penalty=500 results in three false negative
+    oneSpike labels which should have exactly one predicted spike
+    (blue dots). \textbf{Bottom:} penalty=0.05 results in two false
+    positive labels, each with too many spikes. \textbf{Middle:}
+    penalty=0.5 results in zero label errors so is a good fit for
+    these data.}
+  \label{fig:neuro-training}
 \end{figure}
 
 \bibliographystyle{abbrvnat}
 \bibliography{refs}
 
 \end{document}
-\
