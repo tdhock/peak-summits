@@ -1,9 +1,11 @@
-paper.pdf: paper.tex refs.bib figure-Mono27ac-label-error.png figure-Mono27ac-summits-vs-peaks.png figure-AR1-multimodal.png figure-neuro-training.png
+paper.pdf: paper.tex refs.bib figure-Mono27ac-label-error.png figure-Mono27ac-summits-vs-peaks.png figure-AR1-multimodal.png figure-neuro-training.png figure-ecg.png
 	rm -f *.aux *.bbl
 	pdflatex paper
 	bibtex paper
 	pdflatex paper
 	pdflatex paper
+figure-ecg.png: figure-ecg.R
+	R --no-save < $<
 figure-Mono27ac-label-error.png: figure-Mono27ac-label-error.R
 	R --no-save < $<
 figure-Mono27ac-summits-vs-peaks.png: figure-Mono27ac-summits-vs-peaks.R
