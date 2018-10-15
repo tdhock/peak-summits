@@ -62,10 +62,10 @@ m <- function(model){
     model,
     c("AR1", "Multimodal"),
     c("Previous model:
-AR1 with changepoints
-Jewell et al 2017", "Proposed graph-constrained
-changepoint model
-(two nodes, four edges)"))
+AR1 changepoint
+Jewell et al 2017", "Proposed model:
+changepoint with
+graph constraints"))
 }
 tall.dt[, model.fac := m(model)]
 spike.dt <- tall.dt[0 < change.after & thresh < value, list(
@@ -184,7 +184,8 @@ gg.out <- ggplot()+
   ##   linetype="dashed",
   ##   data=show.spikes)+
   scale_y_continuous(
-    "Calcium concentration (measure of neural activity)",
+    "Fluorescence intensity
+(Measure of neural activity)",
     breaks=seq(0, 10, by=2),
     limits=c(-2, 10)
   )+
@@ -193,15 +194,16 @@ gg.out <- ggplot()+
   scale_color_manual(values=type.colors)+
   geom_text(aes(
     x,y,label=label, color=type, hjust=hjust),
+    size=3,
     data=data.table(model.fac=m("AR1"), rbind(
       data.table(
-        hjust=0, x=170, y=9, label="Noisy activity data", type="data"),
+        hjust=0, x=167, y=2, label="Noisy activity data", type="data"),
       data.table(
-        hjust=0, x=170.2, y=5, label="Mean model", type="model"),
+        hjust=1, x=169.5, y=5, label="Mean model", type="model"),
       data.table(
         hjust=1, x=169.4, y=spike.y, label="Predicted spikes", type="model"))))
 ##print(gg.out)
-png("../../figure-AR1-multimodal.png", 10, 4, units="in", res=300)
+png("../../figure-AR1-multimodal.png", 7, 2.5, units="in", res=300)
 print(gg.out)
 dev.off()
 ##system("display ../../figure-AR1-multimodal.png")

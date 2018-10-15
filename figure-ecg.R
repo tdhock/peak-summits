@@ -3,6 +3,9 @@ works_with_R(
   ggplot2="3.0.0",
   data.table="1.11.6")
 
+## t = probably 250
+## milliVolt or microVolt
+
 csv.vec <- Sys.glob("ecg-data/output/*.csv")
 ecg <- fread(csv.vec[6], fill=TRUE)
 ecg.mat <- t(as.matrix(ecg))
@@ -87,7 +90,7 @@ gg+
 
 m <- function(x){
   factor(x, c("previous", "changepoint"), c(
-    "Previous model", "Graph-constrained\nchangepoint model"))
+    "Previous model", "Proposed model"))
 }
 model.dt <- rbind(res.dt[, data.table(
   model=m("changepoint"),
@@ -96,26 +99,37 @@ model.dt <- rbind(res.dt[, data.table(
   letter)], some.model[, data.table(
     model=m("previous"),
     Y, t, letter)])[letter %in% c("Q", "R", "S")]
-gg <- ggplot()+
+samples.per.second <- 250
+truth.dt <- res.dt[letter=="R", list(t=(start.i+end.i)/2)]
+gg <- ggplot(,aes(t/samples.per.second, Y))+
+  geom_vline(aes(
+    xintercept=t/samples.per.second),
+    color="red",
+    data=truth.dt)+
+  geom_text(aes(
+    x, y, hjust=hjust, label="True R"),
+    color="red",
+    size=3,
+    data=data.table(x=208.5, y=6500, hjust=1, label="True R", model=m("changepoint")))+
   theme_bw()+
   theme(panel.margin=grid::unit(0, "lines"))+
   facet_grid(model ~ .)+
-  geom_line(aes(
-    t, Y),
+  geom_line(
     color="grey50",
     data=some.ecg)+
-  geom_line(aes(
-    t, Y),
+  geom_line(
     data=data.table(model=m("changepoint"), mean.dt),
     color="blue")+
   geom_label(aes(
-    t, Y, label=letter),
+    label=letter),
     color="blue",
     size=3,
     label.padding=grid::unit(0.1, "lines"),
     alpha=0.6,
     data=model.dt)+
-  coord_cartesian(xlim=c(52000, 52900), expand=FALSE)
-png("figure-ecg.png", 10, 4, res=300, units="in")
+  coord_cartesian(xlim=c(52000, 52900)/samples.per.second, expand=FALSE)+
+  xlab("Time (seconds)")+
+  ylab("Electrocardiogram activity (mV)")
+png("figure-ecg.png", 7, 2.5, res=300, units="in")
 print(gg)
 dev.off()
