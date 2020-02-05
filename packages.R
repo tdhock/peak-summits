@@ -1,3 +1,4 @@
+options(namedCapture.engine="PCRE")
 works_with_R(
   "3.5.1",
   data.table="1.11.6",

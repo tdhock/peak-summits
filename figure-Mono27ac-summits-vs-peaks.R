@@ -1,7 +1,7 @@
 source("packages.R")
 
 ## Compute several models and confront with labels.
-data(Mono27ac)
+data(Mono27ac, package="PeakSegPipeline")
 data.dir <- file.path(
   tempfile(),
   "H3K27ac-H3K4me3_TDHAM_BP",

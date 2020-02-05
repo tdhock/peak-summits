@@ -56,6 +56,12 @@ print(gg)
 
 fwrite(some.ecg[, list(Y)], "Cpattern1D/data.txt", col.names=FALSE)
 
+ECG <- list(
+  data=some.ecg[, list(time=t, millivolts=Y)],
+  PanTompkins=some.model[, list(time=t, millivolts=Y, letter)])
+save(ECG, file="~/R/gfpop/data/ECG.RData", compress="xz")
+prompt(ECG, file="~/R/gfpop/man/ECG.Rd")
+
 
 ## graph << Edge(beta, 0, 1, "down",   0);
 ## graph << Edge(0,    1, 2, "up", 2000);

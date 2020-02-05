@@ -2,9 +2,32 @@ This repo investigates a graph-constrained changepoint model with two
 states and four changes, multi-modal regression, which detects peak
 summits.
 
+** 5 Feb 2020
+
+Does forward and backward multi-modal regression model have same cost?
+No, it is not symmetric! But simpler up-down constrained model is.
+
+#+BEGIN_SRC 
+> loss.dt[order(allow.free.changes), .(
++   allow.free.changes, direction, total.cost, penalty, peaks)]
+   allow.free.changes direction  total.cost penalty peaks
+1:              FALSE   forward    16241.82    3000    12
+2:              FALSE   reverse    16241.82    3000    12
+3:               TRUE   forward -1190415.75    3000    12
+4:               TRUE   reverse -1202560.64    3000    12
+> 
+#+END_SRC
+
+** 30 Jan 2019
+
+- [[file:figure_7/fig_code/figure-training.R]] old figure using command
+  line progam.
+- [[file:figure_7/fig_code/figure-gfpop-spikefinder.R]] new figure using R pkg.
+
 ** 20 Sept 2018
 
-[[file:figure-Mono27ac-label-error.R]] uses new C++ solver to detect summits in figure below.
+[[file:figure-Mono27ac-label-error.R]] uses new C++ solver to detect
+summits in figure below.
 
 [[file:figure-Mono27ac-label-error.png]]
 
