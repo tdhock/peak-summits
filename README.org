@@ -7,7 +7,7 @@ summits.
 Does forward and backward multi-modal regression model have same cost?
 No, it is not symmetric! But simpler up-down constrained model is.
 
-#+BEGIN_SRC 
+#+BEGIN_SRC R
 > loss.dt[order(allow.free.changes), .(
 +   allow.free.changes, direction, total.cost, penalty, peaks)]
    allow.free.changes direction  total.cost penalty peaks
@@ -17,6 +17,15 @@ No, it is not symmetric! But simpler up-down constrained model is.
 4:               TRUE   reverse -1202560.64    3000    12
 > 
 #+END_SRC
+
+Plot of differences for two models with two states and variable number
+of edges (2=up-down constraint, 4=multi-modal regression).
+
+[[file:figure-Mono27ac-backwards-zoomout.png]]
+
+[[file:figure-Mono27ac-backwards-middle.png]]
+
+[[file:figure-Mono27ac-backwards.png]]
 
 ** 30 Jan 2019
 
